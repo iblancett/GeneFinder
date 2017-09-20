@@ -72,6 +72,7 @@ def rest_of_ORF(dna):
     >>> rest_of_ORF("ATGAGATAGG")
     'ATGAGA'
     """
+    stop_codons = ['TAG','TAA','TGA']
 
     for c in range(0,len(dna),3):
         if c+3 > len(dna): # Make sure enough codons left to make stop codon
@@ -79,7 +80,7 @@ def rest_of_ORF(dna):
         else:
             frame = dna[c:c+3] #Establish codon frame
 
-        if frame == 'TAG' or frame == 'TAA' or frame == 'TGA':
+        if frame not in stop_codons:
             return dna[:c] # if codon is stop codon, return everything before it
 
     return dna
@@ -133,6 +134,7 @@ def find_all_ORFs(dna):
     for c in range(3):
         all_ORFs.extend(find_all_ORFs_oneframe(dna[c:]))
 
+    # Return all frames together if ORF exists
     return [ORF for ORF in all_ORFs if ORF]
 
 def find_all_ORFs_both_strands(dna):
@@ -147,7 +149,7 @@ def find_all_ORFs_both_strands(dna):
 
     forward = find_all_ORFs(dna)
     backward = find_all_ORFs(get_reverse_complement(dna))
-    return forward + backward
+    return forward + backward # Return combined list of regular ORFs and reverse complement ORFs
 
 
 def longest_ORF(dna):
@@ -156,7 +158,10 @@ def longest_ORF(dna):
     >>> longest_ORF("ATGCGAATGTAGCATCAAA")
     'ATGCTACATTCGCAT'
     """
-    return max(find_all_ORFs_both_strands(dna), key=len)
+    if find_all_ORFs_both_strands(dna): # Make sure there are ORFs
+        return max(find_all_ORFs_both_strands(dna), key=len)
+    else:
+        return " " # No sequence found
 
 
 def longest_ORF_noncoding(dna, num_trials):
@@ -166,8 +171,15 @@ def longest_ORF_noncoding(dna, num_trials):
         dna: a DNA sequence
         num_trials: the number of random shuffles
         returns: the maximum length longest ORF """
-    # TODO: implement this
-    pass
+
+    # Get list of ORFs, length of num_trials
+    all_longest = [longest_ORF(shuffle_string(dna)) for i in range(num_trials)]
+
+    if any(all_longest) != " ":
+        return len(max(all_longest, key=len))  # If at least one ORF found, find the length of longest
+    else:
+        return 0 # No longest found
+
 
 
 def coding_strand_to_AA(dna):
@@ -184,8 +196,9 @@ def coding_strand_to_AA(dna):
         >>> coding_strand_to_AA("ATGCCCGCTTT")
         'MPA'
     """
-    # TODO: implement this
-    pass
+    # For every triple, look up codons in aa_table, join list into string
+    codon_list = [aa_table[dna[c:c+3]] for c in range(0,len(dna),3) if c+3 <= len(dna)]
+    return ''.join(codon_list)
 
 
 def gene_finder(dna):
@@ -194,9 +207,12 @@ def gene_finder(dna):
         dna: a DNA sequence
         returns: a list of all amino acid sequences coded by the sequence dna.
     """
-    # TODO: implement this
-    pass
+    threshold = longest_ORF_noncoding(dna, 1500) # Set threshold
+    all_ORFs = find_all_ORFs_both_strands(dna) # find ORFs of both strands
+    # Return protein encoded ORFs longer than threshold
+    return [coding_strand_to_AA(dna) for ORF in all_ORFs if len(all_ORFs)>threshold]
+
 
 if __name__ == "__main__":
     import doctest
-    doctest.run_docstring_examples(get_complement, globals(), verbose=True)
+    doctest.run_docstring_examples(coding_strand_to_AA, globals(), verbose=True)
