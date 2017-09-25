@@ -80,7 +80,7 @@ def rest_of_ORF(dna):
         else:
             frame = dna[c:c+3] #Establish codon frame
 
-        if frame not in stop_codons:
+        if frame in stop_codons:
             return dna[:c] # if codon is stop codon, return everything before it
 
     return dna
@@ -174,7 +174,6 @@ def longest_ORF_noncoding(dna, num_trials):
 
     # Get list of ORFs, length of num_trials
     all_longest = [longest_ORF(shuffle_string(dna)) for i in range(num_trials)]
-
     if any(all_longest) != " ":
         return len(max(all_longest, key=len))  # If at least one ORF found, find the length of longest
     else:
@@ -208,11 +207,17 @@ def gene_finder(dna):
         returns: a list of all amino acid sequences coded by the sequence dna.
     """
     threshold = longest_ORF_noncoding(dna, 1500) # Set threshold
+    print(len(dna))
+    print(threshold)
     all_ORFs = find_all_ORFs_both_strands(dna) # find ORFs of both strands
     # Return protein encoded ORFs longer than threshold
-    return [coding_strand_to_AA(dna) for ORF in all_ORFs if len(all_ORFs)>threshold]
+    print([coding_strand_to_AA(ORF) for ORF in all_ORFs if len(ORF)>=threshold])
+    
+    return
 
 
 if __name__ == "__main__":
-    import doctest
-    doctest.run_docstring_examples(coding_strand_to_AA, globals(), verbose=True)
+    dna = load_seq("C:/Users/iblancett/Documents/SoftwareDesign/GeneFinder/data/X73525.fa")
+    gene_finder(dna)
+    #import doctest
+    #doctest.run_docstring_examples(coding_strand_to_AA, globals(), verbose=True)
